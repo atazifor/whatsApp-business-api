@@ -19,16 +19,20 @@ public class WhatsAppService {
     }
 
     public void handleIncomingMessage(Map<String, Object> payload) {
+        try {
+            Map<String, Object> message = extractMessage(payload);
+            String userMessage = ((Map<String, String>) message.get("text")).get("body");
 
-        Map<String, Object> message = extractMessage(payload);
-        String userMessage = ((Map<String, String>) message.get("text")).get("body");
+            String sender = (String) message.get("from");
 
-        System.out.println("USER MESSAGE: " + message);
-        String sender = (String) message.get("from");
+            String templateName = chooseTemplate(userMessage.toLowerCase());
 
-        String templateName = chooseTemplate(userMessage.toLowerCase());
-
-        sendTemplateMessage(templateName, sender);
+            sendTemplateMessage(templateName, sender);
+        } catch (NullPointerException npe) {
+            System.err.println("Null Pointer Exception");
+        } catch (Exception e) {
+            System.out.println("Some error occured");
+        }
         
     }
 
@@ -39,7 +43,7 @@ public class WhatsAppService {
         return ((List<Map<String, Object>>) value.get("messages")).get(0);
     }
 
-    private String chooseTemplate(String messageText) {
+    public String chooseTemplate(String messageText) {
         if (messageText.contains("reminder")) {
             return "event_reminder";
         } else if (messageText.contains("help") || messageText.contains("support")) {

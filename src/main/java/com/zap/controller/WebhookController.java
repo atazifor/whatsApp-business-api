@@ -1,5 +1,6 @@
 package com.zap.controller;
 
+import com.zap.handler.WebhookDispatcher;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zap.service.WhatsAppService;
@@ -19,10 +20,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 public class WebhookController {
 
-    private final WhatsAppService whatsAppService;
+    private final WebhookDispatcher dispatcher;
 
-    public WebhookController(WhatsAppService whatsAppService) {
-        this.whatsAppService = whatsAppService;
+    public WebhookController(WebhookDispatcher dispatcher) {
+        this.dispatcher = dispatcher;
     }
 
     private static final String VERIFY_TOKEN = "zap_verify"; // use the same
@@ -50,9 +51,9 @@ public class WebhookController {
 
     @PostMapping("/webhook")
     public ResponseEntity<Void> handleWebhook(@RequestBody Map<String, Object> payload) {
-        System.out.println("Received webhook: " + payload);
-        whatsAppService.handleIncomingMessage(payload);
-        
+        System.out.println(" ==== Received webhook: === \n" + payload + "\n =====");
+        dispatcher.dispatch(payload);
+
         return ResponseEntity.ok().build();
     }
     
