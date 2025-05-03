@@ -22,7 +22,7 @@ public class MessageHandler {
 
         System.out.println("📩 Message from " + from + ": " + text);
 
-        String template = whatsAppService.chooseTemplate(text);
-        whatsAppService.sendTemplateMessage(template, from);
+        WhatsAppService.TemplatePayload template = whatsAppService.chooseTemplate(text);
+        whatsAppService.sendTemplateMessage(template.name(), from, template.templateParams());
     }
 }

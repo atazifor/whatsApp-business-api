@@ -1,5 +1,6 @@
 package com.zap.service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,50 +19,48 @@ public class WhatsAppService {
         this.webClient = webClient;
     }
 
-    public void handleIncomingMessage(Map<String, Object> payload) {
-        try {
-            Map<String, Object> message = extractMessage(payload);
-            String userMessage = ((Map<String, String>) message.get("text")).get("body");
+    public record TemplatePayload(String name, List<String> templateParams){}
 
-            String sender = (String) message.get("from");
-
-            String templateName = chooseTemplate(userMessage.toLowerCase());
-
-            sendTemplateMessage(templateName, sender);
-        } catch (NullPointerException npe) {
-            System.err.println("Null Pointer Exception");
-        } catch (Exception e) {
-            System.out.println("Some error occured");
-        }
-        
-    }
-
-    private Map<String, Object> extractMessage(Map<String, Object> payload) {
-        List<Map<String, Object>> entry = (List<Map<String, Object>>) payload.get("entry");
-        Map<String, Object> change = (Map<String, Object>) ((List<Map<String, Object>>) entry.get(0).get("changes")).get(0);
-        Map<String, Object> value = (Map<String, Object>) change.get("value");
-        return ((List<Map<String, Object>>) value.get("messages")).get(0);
-    }
-
-    public String chooseTemplate(String messageText) {
+    public TemplatePayload chooseTemplate(String messageText) {
         if (messageText.contains("reminder")) {
-            return "event_reminder";
+            return new TemplatePayload("event_reminder",
+                    List.of("Startup Pitch Night", "Nourri Express", "May 5", "5:00 PM", "Djeuga Palace")
+            );
         } else if (messageText.contains("help") || messageText.contains("support")) {
-            return "customer_support";
+            return new TemplatePayload("customer_support",
+                    List.of()
+            );
         } else {
-            return "hello_world";
+            return new TemplatePayload("hello_world",
+                    null
+            );
         }
     }
 
-    public void sendTemplateMessage(String templateName, String recipientPhone) {
+    public void sendTemplateMessage(String templateName, String recipientPhone, List<String> templateParams) {
+        Map<String , Object> template = new HashMap<>();
+        template.put("name", templateName);
+        template.put("language", Map.of("code", "en_US"));
+        if(templateParams != null && !templateParams.isEmpty()) {
+            List<Map<String, String>> params = templateParams.stream()
+                    .map(param -> Map.of(
+                            "type", "text",
+                            "text", param)
+                    )
+                    .toList();
+            template.put("components", List.of(
+                    Map.of(
+                            "type", "body",
+                        "parameters", params
+                    )
+            ));
+        }
+
         Map<String, Object> requestBody = Map.of(
             "messaging_product", "whatsapp",
             "to", recipientPhone,
             "type", "template",
-            "template", Map.of(
-                "name", templateName,
-                "language", Map.of("code", "en_US")
-            )
+            "template", template
         );
 
         webClient.post()
