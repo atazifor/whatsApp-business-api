@@ -4,20 +4,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.zap.config.properties.WhatsAppProperties;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
+@RequiredArgsConstructor
 public class WhatsAppService {
-    private final WebClient webClient;
-    private final String phoneNumberId = "571710919355097";
-    //system generated access token
-    private final String token = "EAAKbvwbT8zABO2HHq1akVQceuW1J1SStRBNGsQ4hZAPzwbavB2NYvyL8YSIPZBKOFRogFyg5vEzcgqwZCUrFJQwxi9MMG1nwBCbJho6GDkqkuCZAGtmeY1TNy4gs82Wo02czXkKlAFKsVS0BX9Che2pDJJ6xrxZCkKSwQ3ZAxgruqe21AHmyhNCYdZANpI7t9Jq7Qi4ChVpsV6jOZAPpAnHSgEfwOQm4HH3XODUkl5eZB";
+    Logger logger = LoggerFactory.getLogger(WhatsAppService.class);
 
-    public WhatsAppService(WebClient webClient) {
-        this.webClient = webClient;
-    }
+    private final WebClient webClient;
+    private final WhatsAppProperties whatsAppProperties;
 
     public record TemplatePayload(String name, List<String> templateParams){}
 
@@ -62,10 +63,12 @@ public class WhatsAppService {
             "type", "template",
             "template", template
         );
-
+        String uri = String.format("%s/%s/%s/messages", whatsAppProperties.getBaseUrl(), whatsAppProperties.getVersion(), whatsAppProperties.getPhoneNumberId());
+        //"https://graph.facebook.com/v22.0/" + phoneNumberId + "/messages"
+        logger.info("Bearer Token {}", whatsAppProperties.getAccessToken());
         webClient.post()
-            .uri("https://graph.facebook.com/v22.0/" + phoneNumberId + "/messages")
-            .header("Authorization", "Bearer " + token)
+            .uri(uri)
+            .header("Authorization", "Bearer " + whatsAppProperties.getAccessToken())
             .contentType(MediaType.APPLICATION_JSON)
             .bodyValue(requestBody)
             .retrieve()
