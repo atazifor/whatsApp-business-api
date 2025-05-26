@@ -20,41 +20,61 @@ public class WhatsAppService {
     private final WebClient webClient;
     private final WhatsAppProperties whatsAppProperties;
 
-    public record TemplatePayload(String name, List<String> templateParams){}
+    public record TemplatePayload(
+            String name,
+            String languageCode,
+            List<Map<String, Object>> components
+    ) {}
 
     public TemplatePayload chooseTemplate(String messageText) {
         if (messageText.contains("reminder")) {
-            return new TemplatePayload("event_reminder",
-                    List.of("Startup Pitch Night", "Nourri Express", "May 5", "5:00 PM", "Djeuga Palace")
-            );
-        } else if (messageText.contains("help") || messageText.contains("support")) {
-            return new TemplatePayload("customer_support",
-                    List.of()
-            );
+            return new TemplatePayload("event_reminder", "en_US", List.of(
+                Map.of(
+                    "type", "body",
+                    "parameters", List.of(
+                            Map.of("type", "text", "text", "Startup Pitch Night"),
+                            Map.of("type", "text", "text", "Nourri Express"),
+                            Map.of("type", "text", "text", "May 5"),
+                            Map.of("type", "text", "text", "5:00 PM"),
+                            Map.of("type", "text", "text", "Djeuga Palace")
+                    )
+                )
+            ));
+        } else if (messageText.contains("apt") || messageText.contains("appointment")) {
+            return new TemplatePayload("name_dob_capture", "en", List.of(
+                  Map.of(
+                      "type", "header",
+                      "parameters", List.of(Map.of(
+                              "type", "image",
+                              "image", Map.of("link", "https://i.imgur.com/cRnpp1Q.jpeg")
+                      ))
+                  ),
+                    Map.of(
+                    "type", "button",
+                    "sub_type", "flow",
+                    "index", "0",
+                    "parameters", List.of(Map.of(
+                            "type", "action",
+                            "action", Map.of(
+                                    "flow_token", "TEST_TOKEN",
+                                    "flow_action_data", Map.of()
+                            )
+                        ))
+                    )
+            ));
         } else {
-            return new TemplatePayload("hello_world",
+            return new TemplatePayload("hello_world", "en_US",
                     null
             );
         }
     }
 
-    public void sendTemplateMessage(String templateName, String recipientPhone, List<String> templateParams) {
+    public void sendTemplateMessage(String templateName, String languageCode, String recipientPhone, List<Map<String, Object>> components) {
         Map<String , Object> template = new HashMap<>();
         template.put("name", templateName);
-        template.put("language", Map.of("code", "en_US"));
-        if(templateParams != null && !templateParams.isEmpty()) {
-            List<Map<String, String>> params = templateParams.stream()
-                    .map(param -> Map.of(
-                            "type", "text",
-                            "text", param)
-                    )
-                    .toList();
-            template.put("components", List.of(
-                    Map.of(
-                            "type", "body",
-                        "parameters", params
-                    )
-            ));
+        template.put("language", Map.of("code", languageCode));
+        if(components != null && !components.isEmpty()) {
+            template.put("components", components);
         }
 
         Map<String, Object> requestBody = Map.of(
@@ -65,7 +85,6 @@ public class WhatsAppService {
         );
         String uri = String.format("%s/%s/%s/messages", whatsAppProperties.getBaseUrl(), whatsAppProperties.getVersion(), whatsAppProperties.getPhoneNumberId());
         //"https://graph.facebook.com/v22.0/" + phoneNumberId + "/messages"
-        logger.info("Bearer Token {}", whatsAppProperties.getAccessToken());
         webClient.post()
             .uri(uri)
             .header("Authorization", "Bearer " + whatsAppProperties.getAccessToken())
@@ -77,5 +96,4 @@ public class WhatsAppService {
             .doOnError(error -> System.err.println("❌ Error sending message: " + error.getMessage()))
             .subscribe();
     }
-
 }

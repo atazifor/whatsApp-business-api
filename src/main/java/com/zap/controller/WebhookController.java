@@ -1,11 +1,8 @@
 package com.zap.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.zap.handler.WebhookDispatcher;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.zap.service.WhatsAppService;
-
-import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +47,7 @@ public class WebhookController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<Void> handleWebhook(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Void> handleWebhook(@RequestBody JsonNode payload) {
         System.out.println(" ==== Received webhook: === \n" + payload + "\n =====");
         dispatcher.dispatch(payload);
 

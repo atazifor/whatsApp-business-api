@@ -1,38 +1,30 @@
 package com.zap.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-
 @Service
+@RequiredArgsConstructor
 public class WebhookDispatcher {
+    Logger logger = LoggerFactory.getLogger(WebhookDispatcher.class);
+
     private final MessageHandler messageHandler;
     private final StatusHandler statusHandler;
 
-    public WebhookDispatcher(MessageHandler messageHandler, StatusHandler statusHandler) {
-        this.messageHandler = messageHandler;
-        this.statusHandler = statusHandler;
-    }
-
-    public void dispatch(Map<String, Object> payload) {
-        try {
-            List<Map<String, Object>> entries = (List<Map<String, Object>>) payload.get("entry");
-            for(Map<String, Object> entry: entries) {
-                List<Map<String, Object>> changes = (List<Map<String, Object>>) entry.get("changes");
-                for(Map<String, Object> change: changes) {
-                    Map<String, Object> value = (Map<String, Object>) change.get("value");
-                    if(value.containsKey("messages")) {
-                        messageHandler.handle(value);
-                    }else if (value.containsKey("statuses")) {
-                        statusHandler.handle(value);
-                    } else {
-                        System.out.println("🔍 Unhandled webhook type: " + value.keySet());
-                    }
-                }
-            }
-        } catch(Exception e) {
-            System.err.println("❌ Webhook dispatch error: " + e.getMessage());
+    public void dispatch(JsonNode node) {
+        JsonNode value = node.at("/entry/0/changes/0/value");
+        if(value.has("messages")) {
+            JsonNode messages = value.get("messages");
+            logger.info("We got a message: {}", messages);
+            messageHandler.handle(messages);
+        }
+        if(value.has("statuses")) {
+            JsonNode statuses = value.get("statuses");
+            logger.info("Status updates: {}", statuses);
+            statusHandler.handle(statuses);
         }
     }
 }
